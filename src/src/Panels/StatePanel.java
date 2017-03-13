@@ -28,6 +28,7 @@ public class StatePanel extends JPanel {
 
     private HashMap<String,Object> hashMap;
     private String directory;
+    private Method[] method;
 
     public StatePanel(String directory) {
         hashMap = new HashMap<>();
@@ -35,8 +36,8 @@ public class StatePanel extends JPanel {
 
         objectListLabel = new JLabel("<html><pre>");
         propsListLabel = new JLabel("<html><pre>");
-        leftScrollPane = new JScrollPane(objectListLabel);
-        rightScrollPane = new JScrollPane(propsListLabel);
+        leftScrollPane = new JScrollPane(objectListLabel,ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        rightScrollPane = new JScrollPane(propsListLabel,ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         objectComboBox = new JComboBox();
         methodComboBox = new JComboBox();
         objectLabel = new JLabel("Objects:");
@@ -52,16 +53,14 @@ public class StatePanel extends JPanel {
         GridBagConstraints c = new GridBagConstraints();
         /**MainPanel*/
         /*LeftPanel*/
-        c.gridx = 0; c.gridy = 0; c.gridwidth = 1; c.gridheight = 1; c.weightx = 0.3; c.weighty = 9;
+        c.gridx = 0; c.gridy = 0; c.gridwidth = 1; c.gridheight = 1; c.weightx = 0.1; c.weighty = 9;
         c.anchor = GridBagConstraints.WEST; c.fill = GridBagConstraints.BOTH; add(leftPanel,c);
         /*RightScrollPane*/
-        c.gridx = 1; c.gridy = 0; c.gridwidth = 1; c.gridheight = 1; c.weightx = 0.7; c.weighty = 9;
+        c.gridx = 1; c.gridy = 0; c.gridwidth = 1; c.gridheight = 1; c.weightx = 0.9; c.weighty = 9;
         c.anchor = GridBagConstraints.EAST; c.fill = GridBagConstraints.BOTH; add(rightScrollPane,c);
         /*FooterPanel*/
         c.gridx = 0; c.gridy = 1; c.gridwidth = 2; c.gridheight = 1; c.weightx = 1; c.weighty = 1;
         c.anchor = GridBagConstraints.SOUTH; c.fill = GridBagConstraints.HORIZONTAL; add(footerPanel,c);
-        /*PropsListLabel*/
-        rightScrollPane.add(propsListLabel);
         /**LeftPanel*/
         /*ObjectLabel*/
         c.gridx = 0; c.gridy = 0; c.gridwidth = 1; c.gridheight = 1; c.weightx = 1; c.weighty = 1;
@@ -71,9 +70,10 @@ public class StatePanel extends JPanel {
         c.anchor = GridBagConstraints.WEST; c.fill = GridBagConstraints.BOTH; leftPanel.add(leftScrollPane,c);
         /*ObjectComboBox*/
         c.gridx = 0; c.gridy = 2; c.gridwidth = 1; c.gridheight = 1; c.weightx = 1; c.weighty = 1;
-        c.anchor = GridBagConstraints.WEST; c.fill = GridBagConstraints.BOTH; leftPanel.add(objectComboBox,c);
+        c.anchor = GridBagConstraints.WEST; c.fill = GridBagConstraints.HORIZONTAL; leftPanel.add(objectComboBox,c);
         /*MethodComboBox*/
         c.gridx = 0; c.gridy = 3; c.gridwidth = 1; c.gridheight = 1; c.weightx = 1; c.weighty = 1;
+        methodComboBox.setPrototypeDisplayValue("----------------------------------");
         c.anchor = GridBagConstraints.WEST; c.fill = GridBagConstraints.HORIZONTAL; leftPanel.add(methodComboBox,c);
         /**Footer*/
         /*ConsoleLabel*/
@@ -94,6 +94,10 @@ public class StatePanel extends JPanel {
                 readObjects(directory);
                 updateObjectListLabel();
                 updateObjectComboBox();
+                objectComboBox.setSelectedIndex(0);
+                updateMethodComboBox();
+                methodComboBox.setSelectedIndex(0);
+                updatePropsListLabel();
             }
         });
 
@@ -104,6 +108,10 @@ public class StatePanel extends JPanel {
                 updatePropsListLabel();
             }
         });
+    }
+
+    private void updateMethod(Object object) {
+        method = object.getClass().getMethods();
     }
 
     private void readObjects(String dir) {
@@ -172,7 +180,7 @@ public class StatePanel extends JPanel {
     }
 
     private void updateObjectListLabel() {
-        StringBuilder sb = new StringBuilder("<html><pre>" + "");
+        StringBuilder sb = new StringBuilder("<html><pre>");
         ArrayList arrayList = new ArrayList(hashMap.entrySet());
         for (int i = 0; i < hashMap.size(); i++) {
             try {
@@ -191,14 +199,52 @@ public class StatePanel extends JPanel {
     private void updatePropsListLabel() {
         StringBuilder sb = new StringBuilder("<html><pre>");
         String[] stringArr = objectComboBox.getSelectedItem().toString().split(" ");
-        Object o = hashMap.get(stringArr[stringArr.length - 1]);
+        Object obj = hashMap.get(stringArr[stringArr.length - 1]);
 
-        /*Package*/
-        sb.append("Class ");
-        //here comes the file parsing
+        System.out.println("updating fields");
+
+        /*Fields*/
+        Field[] fields = obj.getClass().getDeclaredFields();
+        sb.append("*Fields*<br>");
+        for (Field f : fields) {
+            try {
+                f.setAccessible(true);
+                sb.append(Modifier.toString(f.getModifiers()))
+                        .append(" ")
+                        .append(f.getType().getCanonicalName())
+                        .append(" ")
+                        .append(f.getName())
+                        .append(" = ")
+                        .append(f.get(obj))
+                        .append(";<br>");
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+        /*Methods*/
+        sb.append("*Methods*<br>");
+        {
+            int i = 0;
+            for (Method m : method) {
+                sb.append("#")
+                        .append(i++)
+                        .append(" ")
+                        .append(Modifier.toString(m.getModifiers()))
+                        .append(" ")
+                        .append(m.getName())
+                        .append("(")
+                        .append(m.getParameters())
+                        .append("): ")
+                        .append(m.getReturnType())
+                        .append(";<br>");
+            }
+        }
+        propsListLabel.setText(sb.toString());
     }
 
     private void updateObjectComboBox() {
+        objectComboBox.removeAllItems();
         ArrayList arrayList = new ArrayList(hashMap.entrySet());
         StringBuilder sb = new StringBuilder();
         for(int i = 0; i < hashMap.size(); i++) {
@@ -212,37 +258,47 @@ public class StatePanel extends JPanel {
                 e.printStackTrace();
             }
         }
+        if (objectComboBox.getItemCount() != 0) updateMethodComboBox();
     }
 
     private void updateMethodComboBox() {
+        methodComboBox.removeAllItems();
         String[] stringArr = objectComboBox.getSelectedItem().toString().split(" ");
         Object object = hashMap.get(stringArr[stringArr.length - 1]);
+        updateMethod(object);
 
-        Method[] method = object.getClass().getMethods();
         if (method.length != 0) {
             StringBuilder sb = new StringBuilder();
             Class<?>[] parameters;
             for (int i = 0; i < method.length; i++) {
                 sb.setLength(0);
+                /*
                 parameters = method[i].getParameterTypes();
                 for (int j = 0; j < parameters.length; j++) {
-                    sb.append("i ")
+                    sb.append(" ")
                             .append(getParamType(parameters[j]))
                             .append(" ")
                             .append("arg")
                             .append(j);
                     if (j + 1 != parameters.length) sb.append(", ");
                 }
+                */
                 methodComboBox.addItem(sb.append("): ")
                         .append(method[i].getReturnType().getSimpleName())
+                        .insert(0,"...")
                         .insert(0,"(")
                         .insert(0,method[i].getName())
+                    /*
+                    .insert(0," ")
+                    .insert(0, Modifier.toString(method[i].getModifiers()))
+                    */
                         .insert(0," ")
-                        .insert(0, Modifier.toString(method[i].getModifiers()))
+                        .insert(0,i)
+                        .insert(0,"#")
                         .toString());
+
             }
         }
-
     }
 
     private String getParamType(Class<?> that) {
@@ -250,5 +306,4 @@ public class StatePanel extends JPanel {
             return that.getSimpleName();
         } else return that.getSimpleName();
     }
-
 }
