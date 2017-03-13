@@ -1,5 +1,6 @@
 package src.Panels;
 
+import org.jetbrains.annotations.NotNull;
 import src.MainFrame;
 import src.NamedObject;
 
@@ -266,6 +267,7 @@ public class InputPanel extends JPanel {
         consoleField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                StatePanel.readObjects(directory,hashMap);
                 createAnInstance();
                 resetButton.doClick();
             }
@@ -300,12 +302,11 @@ public class InputPanel extends JPanel {
 
     protected static Object[] getObjects(HashMap<String,Object> hashMap, String[] strings, Class<?>[] parTypes) {
         Object[] objects = new Object[strings.length];
-
+        System.out.println("hashMap size: " + hashMap.size());
         for (int i = 0; i < parTypes.length; i++) {
             if (hashMap.containsKey(strings[i])) objects[i] = hashMap.get(strings[i]);
             else {
-                System.out.println("i = " + i);
-                System.out.println(parTypes[i]);
+                System.out.println("parameter #" + i + " " + parTypes[i]);
 
                 if (parTypes[i] == Integer.TYPE) objects[i] = Integer.parseInt(strings[i]);
                 if (parTypes[i] == Double.TYPE) objects[i] = Double.parseDouble(strings[i]);
@@ -336,9 +337,7 @@ public class InputPanel extends JPanel {
         System.out.println(parStrings[0]);
         Class<?>[] parTypes = constructor.getParameterTypes();
         System.out.println("parTypes length = " + parTypes.length);
-
         Object[] objects = getObjects(hashMap,parStrings,parTypes);
-
         try {
             String[] stringArr = input.split("=")[0].split(" ");
             String name = stringArr[stringArr.length - 1];
@@ -347,6 +346,7 @@ public class InputPanel extends JPanel {
             System.out.println(hashMap.size());
             LinkedList<NamedObject> linkedList = new LinkedList<NamedObject>();
             linkedList.addLast(new NamedObject(obj,name));
+            StatePanel.readObjects(directory,hashMap);
             writeToFile(directory,parTypes,parStrings,obj,name);
         } catch (InstantiationException e) {
             e.printStackTrace();
@@ -357,7 +357,7 @@ public class InputPanel extends JPanel {
         }
     }
 
-    private void writeToFile(String dir, Class<?>[] parTypes, String[] strings, Object obj, String name) {
+    protected static void writeToFile(String dir, Class<?>[] parTypes, String[] strings, Object obj, String name) {
         StringBuilder sb = new StringBuilder("<0>");
         sb.append(obj.getClass().getCanonicalName())
                 .append(":")
@@ -371,7 +371,6 @@ public class InputPanel extends JPanel {
         for (int i = 0; i < strings.length; i++) {
             sb.append(strings[i])
                     .append(";");
-
         }
         try (FileWriter fw = new FileWriter(dir, true);
              BufferedWriter bw = new BufferedWriter(fw);

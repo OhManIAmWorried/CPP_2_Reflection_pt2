@@ -26,13 +26,13 @@ public class StatePanel extends JPanel {
     private JPanel leftPanel;
     private JPanel footerPanel;
 
-    private HashMap<String,Object> hashMap;
-    private String directory;
-    private Method[] method;
+    private HashMap<String,Object> hashMapGlobal;
+    private String directoryGlobal;
+    private Method[] methodsGlobal;
 
-    public StatePanel(String directory) {
-        hashMap = new HashMap<>();
-        this.directory = directory;
+    public StatePanel(String directoryGlobal) {
+        hashMapGlobal = new HashMap<>();
+        this.directoryGlobal = directoryGlobal;
 
         objectListLabel = new JLabel("<html><pre>");
         propsListLabel = new JLabel("<html><pre>");
@@ -91,13 +91,17 @@ public class StatePanel extends JPanel {
             @Override
             public void componentShown(ComponentEvent e) {
                 super.componentShown(e);
-                readObjects(directory);
+                readObjects(directoryGlobal, hashMapGlobal);
                 updateObjectListLabel();
                 updateObjectComboBox();
-                objectComboBox.setSelectedIndex(0);
-                updateMethodComboBox();
-                methodComboBox.setSelectedIndex(0);
-                updatePropsListLabel();
+                if (objectComboBox.getItemCount() != 0) {
+                    objectComboBox.setSelectedIndex(0);
+                    updateMethodComboBox();
+                }
+                if (methodComboBox.getItemCount() != 0) {
+                    methodComboBox.setSelectedIndex(0);
+                    updatePropsListLabel();
+                }
             }
         });
 
@@ -108,13 +112,53 @@ public class StatePanel extends JPanel {
                 updatePropsListLabel();
             }
         });
+
+        consoleField.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                invokeMethod();
+            }
+        });
+    }
+
+    private void invokeMethod() {
+        Method m = methodsGlobal[methodComboBox.getSelectedIndex()];
+        if (m.getReturnType().equals(Void.TYPE)) {
+            Object obj = hashMapGlobal.get(objectComboBox.getSelectedItem().toString().split(" ")[1]);
+            String[] strings = consoleField.getText().split("\\(")[1].replaceAll("\\);","").split(",");
+            Object[] objects = InputPanel.getObjects(hashMapGlobal,strings,m.getParameterTypes());
+
+            if ((objects.length == 1) && (objects[0] == null)) objects = null;
+
+            try {
+                m.invoke(obj,objects);
+                updatePropsListLabel();
+            } catch (IllegalAccessException e1) {
+                e1.printStackTrace();
+            } catch (InvocationTargetException e1) {
+                e1.printStackTrace();
+            }
+        } else {
+            String[] leftArr = consoleField.getText().split("=")[0].split(" ");
+            String name = leftArr[leftArr.length - 1];
+            Class<?> classType = m.getReturnType();
+            Object[] objects = InputPanel.getObjects(hashMapGlobal,consoleField.getText().split("\\(")[1].replaceAll("\\);","").split(","),m.getParameterTypes());
+            try {
+                Object obj1 = m.invoke(objects);
+                hashMapGlobal.put(name,objects);
+            } catch (IllegalAccessException e1) {
+                e1.printStackTrace();
+            } catch (InvocationTargetException e1) {
+                e1.printStackTrace();
+            }
+        }
+        updatePropsListLabel();
     }
 
     private void updateMethod(Object object) {
-        method = object.getClass().getMethods();
+        methodsGlobal = object.getClass().getMethods();
     }
 
-    private void readObjects(String dir) {
+    protected static void readObjects(String dir, HashMap<String,Object> hashMap) {
         hashMap.clear();
 
         StringBuilder sb = new StringBuilder();
@@ -131,6 +175,8 @@ public class StatePanel extends JPanel {
         } catch(Exception e){
             e.printStackTrace();
         }
+
+        if (sb.length() == 0) return;
 
         String[] stringArr = sb.toString().split("<0>");
         ArrayList<Object> arrayList = new ArrayList();
@@ -181,10 +227,10 @@ public class StatePanel extends JPanel {
 
     private void updateObjectListLabel() {
         StringBuilder sb = new StringBuilder("<html><pre>");
-        ArrayList arrayList = new ArrayList(hashMap.entrySet());
-        for (int i = 0; i < hashMap.size(); i++) {
+        ArrayList arrayList = new ArrayList(hashMapGlobal.entrySet());
+        for (int i = 0; i < hashMapGlobal.size(); i++) {
             try {
-                sb.append(Class.forName(hashMap.get(arrayList.get(i).toString().split("=")[0]).getClass().getName()).getSimpleName())
+                sb.append(Class.forName(hashMapGlobal.get(arrayList.get(i).toString().split("=")[0]).getClass().getName()).getSimpleName())
                         .append(" ")
                         .append(arrayList.get(i).toString().split("=")[0])
                         .append("<br>");
@@ -199,7 +245,7 @@ public class StatePanel extends JPanel {
     private void updatePropsListLabel() {
         StringBuilder sb = new StringBuilder("<html><pre>");
         String[] stringArr = objectComboBox.getSelectedItem().toString().split(" ");
-        Object obj = hashMap.get(stringArr[stringArr.length - 1]);
+        Object obj = hashMapGlobal.get(stringArr[stringArr.length - 1]);
 
         System.out.println("updating fields");
 
@@ -226,17 +272,25 @@ public class StatePanel extends JPanel {
         sb.append("*Methods*<br>");
         {
             int i = 0;
-            for (Method m : method) {
+            for (Method m : methodsGlobal) {
                 sb.append("#")
                         .append(i++)
                         .append(" ")
                         .append(Modifier.toString(m.getModifiers()))
                         .append(" ")
                         .append(m.getName())
-                        .append("(")
-                        .append(m.getParameters())
-                        .append("): ")
-                        .append(m.getReturnType())
+                        .append("(");
+                Class<?>[] params = m.getParameterTypes();
+                for (int j = 0; i < params.length; j++) {
+                    sb.append("arg")
+                            .append(j)
+                            .append(" ")
+                            .append(params.getClass());
+                    if ((j + 1) != params.length) sb.append(", ");
+                }
+
+                sb.append("): ")
+                        .append(m.getReturnType().getCanonicalName())
                         .append(";<br>");
             }
         }
@@ -245,11 +299,11 @@ public class StatePanel extends JPanel {
 
     private void updateObjectComboBox() {
         objectComboBox.removeAllItems();
-        ArrayList arrayList = new ArrayList(hashMap.entrySet());
+        ArrayList arrayList = new ArrayList(hashMapGlobal.entrySet());
         StringBuilder sb = new StringBuilder();
-        for(int i = 0; i < hashMap.size(); i++) {
+        for(int i = 0; i < hashMapGlobal.size(); i++) {
             try {
-                sb.append(Class.forName(hashMap.get(arrayList.get(i).toString().split("=")[0]).getClass().getName()).getSimpleName())
+                sb.append(Class.forName(hashMapGlobal.get(arrayList.get(i).toString().split("=")[0]).getClass().getName()).getSimpleName())
                 .append(" ")
                 .append(arrayList.get(i).toString().split("=")[0]);
                 objectComboBox.addItem(sb.toString());
@@ -264,16 +318,16 @@ public class StatePanel extends JPanel {
     private void updateMethodComboBox() {
         methodComboBox.removeAllItems();
         String[] stringArr = objectComboBox.getSelectedItem().toString().split(" ");
-        Object object = hashMap.get(stringArr[stringArr.length - 1]);
+        Object object = hashMapGlobal.get(stringArr[stringArr.length - 1]);
         updateMethod(object);
 
-        if (method.length != 0) {
+        if (methodsGlobal.length != 0) {
             StringBuilder sb = new StringBuilder();
             Class<?>[] parameters;
-            for (int i = 0; i < method.length; i++) {
+            for (int i = 0; i < methodsGlobal.length; i++) {
                 sb.setLength(0);
                 /*
-                parameters = method[i].getParameterTypes();
+                parameters = methodsGlobal[i].getParameterTypes();
                 for (int j = 0; j < parameters.length; j++) {
                     sb.append(" ")
                             .append(getParamType(parameters[j]))
@@ -284,13 +338,13 @@ public class StatePanel extends JPanel {
                 }
                 */
                 methodComboBox.addItem(sb.append("): ")
-                        .append(method[i].getReturnType().getSimpleName())
+                        .append(methodsGlobal[i].getReturnType().getSimpleName())
                         .insert(0,"...")
                         .insert(0,"(")
-                        .insert(0,method[i].getName())
+                        .insert(0, methodsGlobal[i].getName())
                     /*
                     .insert(0," ")
-                    .insert(0, Modifier.toString(method[i].getModifiers()))
+                    .insert(0, Modifier.toString(methodsGlobal[i].getModifiers()))
                     */
                         .insert(0," ")
                         .insert(0,i)

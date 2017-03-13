@@ -36,4 +36,8 @@ public class TestClass {
         this.aFloat = aFloat;
         this.string = string;
     }
+
+    public void multiplyAnIntByTwo() {
+        anInt = anInt * 2;
+    }
 }
