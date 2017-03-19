@@ -1,6 +1,5 @@
 package src.Panels;
 
-import org.jetbrains.annotations.NotNull;
 import src.MainFrame;
 import src.NamedObject;
 
@@ -11,8 +10,8 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
@@ -38,15 +37,16 @@ public class InputPanel extends JPanel {
     private JRadioButton isObjectRButton;
     private ButtonGroup buttonGroup;
 
-    private JLabel arrLengthLabel;
-    private JTextField arrLengthField;
+    private JLabel arrNameLabel;
+    private JTextField arrNameField;
 
     private JLabel comboBoxLabel;
     private JComboBox comboBox;
 
     private JTextField consoleField;
-    private JLabel consoleLabel;
+    private JButton closeTabButton;
     private JButton addInputButton;
+    private JButton addMultiButton;
 
     private JPanel header;
     private JPanel body;
@@ -72,22 +72,23 @@ public class InputPanel extends JPanel {
         noteLabel = new JLabel("<html><pre>Choose the constructor and make sure you have all the classes<br>you need to pass into your constructor parameters.<br>" +
                 "WARNING: creating anonymous classes in parameters is forbidden!<br>Press ready when everything is ready for using the constructor.<br>" +
                 "Insert the full name of the primary class to open the initialization<br>window.</pre><html>");
-        scrollPane = new JScrollPane(mainLabel,ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane = new JScrollPane(mainLabel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
         isArrayRButton = new JRadioButton("is Array");
-        isObjectRButton = new JRadioButton("is Object",true);
+        isObjectRButton = new JRadioButton("is Object", true);
         buttonGroup = new ButtonGroup();
         buttonGroup.add(isArrayRButton);
         buttonGroup.add(isObjectRButton);
 
-        arrLengthLabel = new JLabel("Array length: ");
-        arrLengthField = new JTextField(4);
+        arrNameLabel = new JLabel("Array name: ");
+        arrNameField = new JTextField(10);
         comboBoxLabel = new JLabel("Constructor #");
         comboBox = new JComboBox();
 
-        consoleLabel = new JLabel("Console: ");
         consoleField = new JTextField("*ConsoleField*");
-        addInputButton = new JButton("Add");
+        addInputButton = new JButton("Add input");
+        closeTabButton = new JButton("Close tab");
+        addMultiButton = new JButton("Add multi-dim array input");
 
         header = new JPanel();
         body = new JPanel();
@@ -109,85 +110,241 @@ public class InputPanel extends JPanel {
 
         /**Header-----------------------------------------------------------------------------------------------------*/
         /*NameLabel*/
-        c.anchor = GridBagConstraints.WEST; c.fill = GridBagConstraints.HORIZONTAL;
-        c.gridx = 0; c.gridy = 0; c.weightx = 0.1; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; header.add(nameLabel,c);
+        c.anchor = GridBagConstraints.WEST;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weightx = 0.1;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        header.add(nameLabel, c);
         /*NameField*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.HORIZONTAL;
-        c.gridx = 1; c.gridy = 0; c.weightx = 0.8; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; header.add(nameField,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 1;
+        c.gridy = 0;
+        c.weightx = 0.8;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        header.add(nameField, c);
         /*ResetButton*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
-        c.gridx = 2; c.gridy = 0; c.weightx = 0.1; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; header.add(resetButton,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.NONE;
+        c.gridx = 2;
+        c.gridy = 0;
+        c.weightx = 0.1;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        header.add(resetButton, c);
         /*ConstructorsLabel*/
-        c.anchor = GridBagConstraints.WEST; c.fill = GridBagConstraints.NONE;
-        c.gridx = 0; c.gridy = 1; c.weightx = 0.1; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; header.add(constructorsLabel,c);
+        c.anchor = GridBagConstraints.WEST;
+        c.fill = GridBagConstraints.NONE;
+        c.gridx = 0;
+        c.gridy = 1;
+        c.weightx = 0.1;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        header.add(constructorsLabel, c);
         /**Body-------------------------------------------------------------------------------------------------------*/
         /*ScrollPane*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.BOTH;
-        c.gridx = 0; c.gridy = 0; c.weightx = 1; c.weighty = 5; c.gridwidth = 1; c.gridheight = 1; body.add(scrollPane,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weightx = 1;
+        c.weighty = 5;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        body.add(scrollPane, c);
         /*NoteLabel*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.HORIZONTAL;
-        c.gridx = 0; c.gridy = 1; c.weightx = 1; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; body.add(noteLabel,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 1;
+        c.weightx = 1;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        body.add(noteLabel, c);
         /**Footer-----------------------------------------------------------------------------------------------------*/
         /**FooterTop*/
         /*IsArrayRButton*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
-        arrLengthLabel.setHorizontalAlignment(JLabel.RIGHT);
-        c.gridx = 0; c.gridy = 0; c.weightx = 0.4; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; footerTopPanel.add(isArrayRButton,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.NONE;
+        arrNameLabel.setHorizontalAlignment(JLabel.RIGHT);
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weightx = 0.3;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footerTopPanel.add(isArrayRButton, c);
         /*IsObjectRButton*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
-        arrLengthLabel.setHorizontalAlignment(JLabel.RIGHT);
-        c.gridx = 0; c.gridy = 1; c.weightx = 0.4; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; footerTopPanel.add(isObjectRButton,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.NONE;
+        arrNameLabel.setHorizontalAlignment(JLabel.RIGHT);
+        c.gridx = 0;
+        c.gridy = 1;
+        c.weightx = 0.3;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footerTopPanel.add(isObjectRButton, c);
 
         /*ArrLengthLabel*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
-        arrLengthLabel.setHorizontalAlignment(JLabel.RIGHT);
-        c.gridx = 1; c.gridy = 0; c.weightx = 0.4; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; footerTopPanel.add(arrLengthLabel,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.NONE;
+        arrNameLabel.setHorizontalAlignment(JLabel.RIGHT);
+        c.gridx = 1;
+        c.gridy = 0;
+        c.weightx = 0.3;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footerTopPanel.add(arrNameLabel, c);
         /*ComboBoxLabel*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.NONE;
         comboBoxLabel.setHorizontalAlignment(JLabel.RIGHT);
-        c.gridx = 1; c.gridy = 1; c.weightx = 0.4; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; footerTopPanel.add(comboBoxLabel,c);
+        c.gridx = 1;
+        c.gridy = 1;
+        c.weightx = 0.3;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footerTopPanel.add(comboBoxLabel, c);
 
         /*ArrLengthField*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
-        c.gridx = 2; c.gridy = 0; c.weightx = 0.2; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; footerTopPanel.add(arrLengthField,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.NONE;
+        c.gridx = 2;
+        c.gridy = 0;
+        c.weightx = 0.3;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footerTopPanel.add(arrNameField, c);
         /*ComboBox*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
-        c.gridx = 2; c.gridy = 1; c.weightx = 0.2; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; footerTopPanel.add(comboBox,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.NONE;
+        c.gridx = 2;
+        c.gridy = 1;
+        c.weightx = 0.3;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footerTopPanel.add(comboBox, c);
         /**FooterBottom*/
-        /*ConsoleLabel*/
-        c.anchor = GridBagConstraints.WEST; c.fill = GridBagConstraints.HORIZONTAL;
-        consoleLabel.setHorizontalAlignment(JLabel.RIGHT);
-        c.gridx = 0; c.gridy = 0; c.weightx = 0.2; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; footerBottomPanel.add(consoleLabel,c);
         /*ConsoleField*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.HORIZONTAL;
-        c.gridx = 1; c.gridy = 0; c.weightx = 0.7; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; footerBottomPanel.add(consoleField,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weightx = 1;
+        c.weighty = 1;
+        c.gridwidth = 3;
+        c.gridheight = 1;
+        footerBottomPanel.add(consoleField, c);
+        /*CloseTabButton*/
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 1;
+        c.weightx = 0.3;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footerBottomPanel.add(closeTabButton, c);
+        /*AddMultiButton*/
+        c.anchor = GridBagConstraints.WEST;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 1;
+        c.gridy = 1;
+        c.weightx = 0.3;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footerBottomPanel.add(addMultiButton, c);
         /*AddInputButton*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.NONE;
-        c.gridx = 2; c.gridy = 0; c.weightx = 0.1; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; footerBottomPanel.add(addInputButton,c);
+        c.anchor = GridBagConstraints.EAST;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 2;
+        c.gridy = 1;
+        c.weightx = 0.3;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footerBottomPanel.add(addInputButton, c);
         /**Footers*/
         /*FooterTop*/
-        c.anchor = GridBagConstraints.NORTH; c.fill = GridBagConstraints.HORIZONTAL;
-        c.gridx = 0; c.gridy = 0; c.weightx = 1; c.weighty = 2; c.gridwidth = 1; c.gridheight = 1; footer.add(footerTopPanel,c);
+        c.anchor = GridBagConstraints.NORTH;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weightx = 1;
+        c.weighty = 2;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footer.add(footerTopPanel, c);
         /*FooterBottom*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.HORIZONTAL;
-        c.gridx = 0; c.gridy = 1; c.weightx = 1; c.weighty = 1; c.gridwidth = 1; c.gridheight = 1; footer.add(footerBottomPanel,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 1;
+        c.weightx = 1;
+        c.weighty = 1;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        footer.add(footerBottomPanel, c);
         /**MainPanel--------------------------------------------------------------------------------------------------*/
         /*Header*/
-        c.anchor = GridBagConstraints.NORTH; c.fill = GridBagConstraints.BOTH;
-        c.gridx = 0; c.gridy = 0; c.weightx = 1; c.weighty = 0.2; c.gridwidth = 1; c.gridheight = 1; add(header,c);
+        c.anchor = GridBagConstraints.NORTH;
+        c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0;
+        c.gridy = 0;
+        c.weightx = 1;
+        c.weighty = 0.2;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        add(header, c);
         /*Body*/
-        c.anchor = GridBagConstraints.CENTER; c.fill = GridBagConstraints.BOTH;
-        c.gridx = 0; c.gridy = 1; c.weightx = 1; c.weighty = 0.6; c.gridwidth = 1; c.gridheight = 1; add(body,c);
+        c.anchor = GridBagConstraints.CENTER;
+        c.fill = GridBagConstraints.BOTH;
+        c.gridx = 0;
+        c.gridy = 1;
+        c.weightx = 1;
+        c.weighty = 0.6;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        add(body, c);
         /*Footer*/
-        c.anchor = GridBagConstraints.SOUTH; c.fill = GridBagConstraints.HORIZONTAL;
-        c.gridx = 0; c.gridy = 2; c.weightx = 1; c.weighty = 0.2; c.gridwidth = 1; c.gridheight = 1; add(footer,c);
+        c.anchor = GridBagConstraints.SOUTH;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.gridx = 0;
+        c.gridy = 2;
+        c.weightx = 1;
+        c.weighty = 0.2;
+        c.gridwidth = 1;
+        c.gridheight = 1;
+        add(footer, c);
+
+        /*Tips========================================================================================================*/
+        addInputButton.setToolTipText("Create new tab of type Input");
+        closeTabButton.setToolTipText("Closes current tab");
+        addMultiButton.setToolTipText("<html><pre>Add new tab of type Multi.<br>" +
+                "Multi is used to create a<br>" +
+                "multi dimensional graph");
 
         /*Presets=====================================================================================================*/
         this.directory = directory;
         nameField.grabFocus();
         switchState(false);
-        /*Listeners===================================================================================================*/
 
+        /*Listeners===================================================================================================*/
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentShown(ComponentEvent e) {
@@ -230,10 +387,11 @@ public class InputPanel extends JPanel {
         isArrayRButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                arrLengthField.setEnabled(true);
-                arrLengthLabel.setEnabled(true);
+                arrNameField.setEnabled(true);
+                arrNameLabel.setEnabled(true);
                 comboBox.setEnabled(false);
                 comboBoxLabel.setEnabled(false);
+                consoleField.setEnabled(false);
             }
         });
 
@@ -242,32 +400,47 @@ public class InputPanel extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 comboBox.setEnabled(true);
                 comboBoxLabel.setEnabled(true);
-                arrLengthField.setEnabled(false);
-                arrLengthLabel.setEnabled(false);
+                arrNameField.setEnabled(false);
+                arrNameLabel.setEnabled(false);
             }
         });
 
-        arrLengthField.addFocusListener(new FocusListener() {
+        arrNameField.addFocusListener(new FocusListener() {
             @Override
             public void focusGained(FocusEvent e) {
-                arrLengthField.setText("");}
+                arrNameField.setText("");
+            }
 
             @Override
-            public void focusLost(FocusEvent e) {}
+            public void focusLost(FocusEvent e) {
+            }
+        });
+
+        arrNameField.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                consoleField.setEnabled(true);
+                consoleField.setText(classType.getSimpleName() + "[] " + arrNameField.getText() + " = {};");
+                consoleField.grabFocus();
+                consoleField.setCaretPosition(consoleField.getText().length() - 2);
+            }
         });
 
         consoleField.addFocusListener(new FocusListener() {
             @Override
-            public void focusGained(FocusEvent e) {consoleField.setText("");}
+            public void focusGained(FocusEvent e) {
+                if (isObjectRButton.isSelected()) consoleField.setText("");
+            }
 
             @Override
-            public void focusLost(FocusEvent e) {}
+            public void focusLost(FocusEvent e) {
+            }
         });
 
         consoleField.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                StatePanel.readObjects(directory,hashMap);
+                StatePanel.readObjects(directory, hashMap);
                 createAnInstance();
                 resetButton.doClick();
             }
@@ -279,24 +452,36 @@ public class InputPanel extends JPanel {
                 MainFrame.addInputPanel();
             }
         });
+
+        addMultiButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                MainFrame.addMultiPanel();
+            }
+        });
+
+        closeTabButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                MainFrame.closeInputPanel();
+            }
+        });
     }
 
     private void switchState(boolean state) {
         //state = false
-        //DONOTTOUCH! XD
         nameField.setEnabled(!state);
         isArrayRButton.setEnabled(state);
         isObjectRButton.setEnabled(state);
         isArrayRButton.setSelected(!state);
         isObjectRButton.setSelected(state);
         noteLabel.setVisible(state);
-        arrLengthField.setEnabled(false);
-        arrLengthLabel.setEnabled(false);
+        arrNameField.setEnabled(false);
+        arrNameLabel.setEnabled(false);
         comboBox.setEnabled(state);
         resetButton.setEnabled(state);
         consoleField.setEnabled(state);
         comboBoxLabel.setEnabled(state);
-        consoleLabel.setEnabled(state);
         constructorsLabel.setEnabled(state);
     }
 
@@ -324,36 +509,51 @@ public class InputPanel extends JPanel {
     }
 
     private void createAnInstance() {
-        //TODO then writing the class via some sort of Serialization to the file, some sort of class array in the source code, and so on
-        //TODO and at last, making the StatePanel with the list of classes and methods for each class
-        Constructor<?> constructor = constrArray[comboBox.getSelectedIndex()];
-        System.out.println("Selected index: " + comboBox.getSelectedIndex());
-        String input = consoleField.getText();
-        String[] parStrings = input
-                .split("\\(")[1]
-                .replaceAll("\\);","")
-                .replaceAll(" ","")
-                .split(",");
-        System.out.println(parStrings[0]);
-        Class<?>[] parTypes = constructor.getParameterTypes();
-        System.out.println("parTypes length = " + parTypes.length);
-        Object[] objects = getObjects(hashMap,parStrings,parTypes);
-        try {
-            String[] stringArr = input.split("=")[0].split(" ");
-            String name = stringArr[stringArr.length - 1];
-            Object obj = constructor.newInstance(objects);
-            hashMap.put(name,obj);
-            System.out.println(hashMap.size());
-            LinkedList<NamedObject> linkedList = new LinkedList<NamedObject>();
-            linkedList.addLast(new NamedObject(obj,name));
-            StatePanel.readObjects(directory,hashMap);
-            writeToFile(directory,parTypes,parStrings,obj,name);
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
+        if  (isObjectRButton.isSelected()) {
+            //Object making
+            Constructor<?> constructor = constrArray[comboBox.getSelectedIndex()];
+            System.out.println("Selected index: " + comboBox.getSelectedIndex());
+            String input = consoleField.getText();
+            String[] parStrings = input
+                    .split("\\(")[1]
+                    .replaceAll("\\);","")
+                    .replaceAll(" ","")
+                    .split(",");
+            System.out.println(parStrings[0]);
+            Class<?>[] parTypes = constructor.getParameterTypes();
+            System.out.println("parTypes length = " + parTypes.length);
+            Object[] objects = getObjects(hashMap,parStrings,parTypes);
+            try {
+                String[] stringArr = input.split("=")[0].split(" ");
+                String name = stringArr[stringArr.length - 1];
+                Object obj = constructor.newInstance(objects);
+                hashMap.put(name,obj);
+                System.out.println(hashMap.size());
+                LinkedList<NamedObject> linkedList = new LinkedList<NamedObject>();
+                linkedList.addLast(new NamedObject(obj,name));
+                StatePanel.readObjects(directory,hashMap);
+                writeToFile(directory,parTypes,parStrings,obj,name);
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
+        } else {
+            //Array making
+            /*
+            String name = arrNameField.getText();
+            String input = consoleField.getText().split("\\{")[1].replaceAll(" ","");
+            String[] argsStringArr = input.split(",");
+            Class<?>[] argTypes = new Class[argsStringArr.length];
+
+            for (int i = 0; i < argsStringArr.length; i++) {
+                argTypes[i] = hashMap.get(argsStringArr[i]).getClass();
+            }
+            Object[] objects = getObjects(hashMap,argsStringArr,argTypes);
+            if (objects.length != 0) {Object[] array =  Array.newInstance(objects)
+            */
         }
     }
 

@@ -33,6 +33,7 @@ public class StatePanel extends JPanel {
     public StatePanel(String directoryGlobal) {
         hashMapGlobal = new HashMap<>();
         this.directoryGlobal = directoryGlobal;
+        methodsGlobal = new Method[0];
 
         objectListLabel = new JLabel("<html><pre>");
         propsListLabel = new JLabel("<html><pre>");
@@ -316,12 +317,12 @@ public class StatePanel extends JPanel {
     }
 
     private void updateMethodComboBox() {
-        methodComboBox.removeAllItems();
-        String[] stringArr = objectComboBox.getSelectedItem().toString().split(" ");
-        Object object = hashMapGlobal.get(stringArr[stringArr.length - 1]);
-        updateMethod(object);
-
         if (methodsGlobal.length != 0) {
+            methodComboBox.removeAllItems();
+            String[] stringArr = objectComboBox.getSelectedItem().toString().split(" ");
+            Object object = hashMapGlobal.get(stringArr[stringArr.length - 1]);
+            updateMethod(object);
+
             StringBuilder sb = new StringBuilder();
             Class<?>[] parameters;
             for (int i = 0; i < methodsGlobal.length; i++) {
